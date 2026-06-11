@@ -44,7 +44,12 @@ services:
       retries: 5
 
   postgres:
-    image: pgvector/pgvector:pg17
+    build:
+      dockerfile_inline: |
+        FROM postgis/postgis:17-3.5
+        RUN apt-get update \
+          && apt-get install -y --no-install-recommends postgresql-17-pgvector \
+          && rm -rf /var/lib/apt/lists/*
     container_name: ${PROJECT_NAME}-postgres
     restart: unless-stopped
     ports:
