@@ -42,7 +42,7 @@ services:
       retries: 5
 
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: ${PROJECT_NAME}-postgres
     restart: unless-stopped
     ports:
