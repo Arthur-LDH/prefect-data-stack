@@ -52,7 +52,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: oceanwise
+      POSTGRES_DB: ${POSTGRES_DB:-database}
       PGDATA: /var/lib/postgres/data/pgdata
     volumes:
       - ./postgres/volumes:/var/lib/postgres/data
