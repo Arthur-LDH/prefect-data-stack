@@ -6,8 +6,9 @@ services:
     container_name: ${PROJECT_NAME}-prefect-server
     image: prefecthq/prefect:3-latest
     command: prefect server start --host 0.0.0.0
+    restart: unless-stopped
     ports:
-      - "4200:4200"
+      - "${PREFECT_PORT:-4200}:4200"
     volumes:
       - prefect-data:/root/.prefect
     networks:
@@ -20,10 +21,8 @@ services:
       start_period: 10s
 
   minio:
-    build:
-      context: .
-      dockerfile: minio/Dockerfile
     container_name: ${PROJECT_NAME}-minio
+    image: minio/minio:latest
     restart: unless-stopped
     ports:
       - "${MINIO_API_PORT:-9000}:9000"
