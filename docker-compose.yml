@@ -1,0 +1,72 @@
+name: ${PROJECT_NAME}-data-stack
+
+services:
+
+  prefect-server:
+    container_name: ${PROJECT_NAME}-prefect-server
+    image: prefecthq/prefect:3-latest
+    command: prefect server start --host 0.0.0.0
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect-data:/root/.prefect
+    networks:
+      - data-stack-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  minio:
+    build:
+      context: .
+      dockerfile: minio/Dockerfile
+    container_name: ${PROJECT_NAME}-minio
+    restart: unless-stopped
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    volumes:
+      - ./minio/volumes:/data
+    networks:
+      - data-stack-network
+    healthcheck:
+      test: [ "CMD-SHELL", "mc alias set check http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD --quiet 2>/dev/null" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: ${PROJECT_NAME}-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: oceanwise
+      PGDATA: /var/lib/postgres/data/pgdata
+    volumes:
+      - ./postgres/volumes:/var/lib/postgres/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - data-stack-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  infra-network:
+    name: data-stack-network
+
+volumes:
+  prefect-data:
